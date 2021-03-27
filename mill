@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
-# This is a wrapper script, that automatically download mill from GitHub release pages
-# You can give the required mill version with MILL_VERSION env variable
+# This is a wrapper script that automatically downloads Mill from GitHub release pages
+# You can give the required Mill version with MILL_VERSION env variable
 # If no version is given, it falls back to the value of DEFAULT_MILL_VERSION
 DEFAULT_MILL_VERSION=0.9.3
 

@@ -60,11 +60,11 @@ Mill also works on a sh environment on Windows (e.g.,
 [WSL](https://docs.microsoft.com/en-us/windows/wsl); to get started, follow the instructions in the [manual](#manual)
 section below. Note that:
 
-* In some environments (such as WSL), mill might have to be run without a server (using `-i`, `--interactive`
+* In some environments (such as WSL), Mill might have to be run without a server (using `-i`, `--interactive`
   , `--no-server`, or
   `--repl`.)
 
-* On Cygwin, run the following after downloading mill:
+* On Cygwin, run the following after downloading Mill:
 
 ```bash
 sed -i '0,/-cp "\$0"/{s/-cp "\$0"/-cp `cygpath -w "\$0"`/}; 0,/-cp "\$0"/{s/-cp "\$0"/-cp `cygpath -w "\$0"`/}' /usr/local/bin/mill
@@ -103,7 +103,7 @@ script directly:
 
 ```bash
 ./mill version
-./mill __.compile
+./mill __.compile # double-underscore
 ```
 
 The `mill` command will automatically use the version specified by the bootstrap script, even if you installed it via
@@ -115,20 +115,20 @@ version of Mill present to build/compile/test your code.
 
 ### millw
 
-Instead of installing mill directly, you can also use [lefou/millw](https://github.com/lefou/millw) as drop-in
-replacement for mill. It provides a small shell script and also a Windows batch file, that transparently downloads mill
-and executes it on your behalf. It respects various ways to configure the preferred mill version (`MILL_VERSION` env
+Instead of installing Mill directly, you can also use [lefou/millw](https://github.com/lefou/millw) as drop-in
+replacement for Mill. It provides a small shell script and also a Windows batch file, that transparently downloads Mill
+and executes it on your behalf. It respects various ways to configure the preferred Mill version (`MILL_VERSION` env
 var, `.mill-version` file, `--mill-version` option) and can also be used as bootstrap script in your project.
 
 ### Coursier (unsupported)
 
-Installing mill via `coursier` or `cs` is currently not officially supported. There are various issues, especially with
+Installing Mill via `coursier` or `cs` is currently not officially supported. There are various issues, especially with
 interactive mode.
 
 ## Updating Mill
 
-Once installed mill is able to use newer or different versions for each project automatically. You don't need to install
-multiple versions of mill yourself.
+Once installed Mill is able to use newer or different versions for each project automatically. You don't need to install
+multiple versions of Mill yourself.
 
 See section [Overriding Mill Versions](#overriding-mill-versions) how to do it.
 
@@ -200,13 +200,13 @@ $ mill -i foo.console              # start a Scala console within your project (
 $ mill -i foo.repl                 # start an Ammonite REPL within your project (in interactive mode: "-i")
 ```
 
-You can run `mill resolve __` to see a full list of the different tasks that are available, `mill resolve foo._` to see
+You can run `mill resolve __` (double-underscore) to see a full list of the different tasks that are available, `mill resolve foo._` to see
 the tasks within `foo`, `mill inspect foo.compile` to inspect a task's doc-comment documentation or what it depends on,
 or `mill show foo.scalaVersion` to show the output of any task.
 
 The most common **tasks** that Mill can run are cached **targets**, such as
 `compile`, and un-cached **commands** such as `foo.run`. Targets do not re-evaluate unless one of their inputs changes,
-where-as commands re-run every time.
+whereas commands re-run every time.
 
 ## Output
 
@@ -265,7 +265,7 @@ object bar extends ScalaModule {
 ```
 
 You can define multiple modules the same way you define a single module, using
-`def moduleDeps` to define the relationship between them. The above builds expects the following project layout:
+`def moduleDeps` to define the relationship between them. The above builds expect the following project layout:
 
 ```
 build.sc
@@ -377,7 +377,7 @@ $ mill -w foo.run
 Mill's `--watch` flag watches both the files you are building using Mill, as well as Mill's own `build.sc` file and
 anything it imports, so any changes to your `build.sc` will automatically get picked up.
 
-For long-running processes like web-servers, you can use `.runBackground` to make sure they re-compile and re-start when
+For long-running processes like web servers, you can use `.runBackground` to make sure they re-compile and re-start when
 code changes, forcefully terminating the previous process even though it may be still alive:
 
 ```bash
@@ -387,7 +387,7 @@ $ mill -w foo.runBackground
 
 ## Parallel Task Execution (Experimental)
 
-By default, mill will evaluate all tasks in sequence. But mill also has support to process tasks in parallel. This
+By default, Mill will evaluate all tasks in sequence. But Mill also supports processing tasks in parallel. This
 feature is currently experimental and we encourage you to report any issues you find on our bug tracker.
 
 To enable parallel task execution, use the `--jobs` (`-j`) option followed by a number of maximal parallel threads.
@@ -395,10 +395,10 @@ To enable parallel task execution, use the `--jobs` (`-j`) option followed by a 
 Example: Use up to 4 parallel thread to compile all modules:
 
 ```bash
-mill -j 4 __.compile
+mill -j 4 __.compile # double-underscore
 ```
 
-To use as much threads as your machine has (logical) processor cores use `--jobs 0`. To disable parallel execution
+To use as many threads as your machine has (logical) processor cores use `--jobs 0`. To disable parallel execution
 use `--jobs 1`. This is currently the default.
 
 Please note that the maximal possible parallelism depends on your project. Tasks that depend on each other can't be
@@ -406,7 +406,7 @@ processes in parallel.
 
 ## Command-line Tools
 
-Mill comes built in with a small number of useful command-line utilities:
+Mill comes with a small number of useful command-line utilities built into it:
 
 ### all
 
@@ -415,7 +415,7 @@ mill all foo.{compile,run}
 mill all "foo.{compile,run}"
 mill all foo.compile foo.run
 mill all _.compile # run compile for every top-level module
-mill all __.compile  # run compile for every module
+mill all __.compile  # run compile for every module (double-underscore)
 ```
 
 `all` runs multiple tasks in a single command
@@ -463,10 +463,10 @@ mill resolve foo.{compile,run}
 mill resolve "foo.{compile,run}"
 mill resolve foo.compile foo.run
 mill resolve _.compile          # list the compile tasks for every top-level module
-mill resolve __.compile         # list the compile tasks for every module
+mill resolve __.compile         # list the compile tasks for every module (double-underscore)
 mill resolve _                  # list every top level module and task
 mill resolve foo._              # list every task directly within the foo module
-mill resolve __                 # list every module and task recursively
+mill resolve __                 # list every module and task recursively (double-underscore)
 ```
 
 ### inspect
@@ -489,8 +489,7 @@ Inputs:
 it also displays its source location and a list of input tasks. This is very useful for debugging and interactively
 exploring the structure of your build from the command line.
 
-`inspect` also works with the same `_`/`__` wildcard/query syntaxes that
-[all](#all)/[resolve](#resolve) do:
+`inspect` works with the same  `_`/`__` wildcard/query syntax used for [all](#all) and [resolve](#resolve):
 
 ```bash
 mill inspect foo.compile
@@ -498,10 +497,10 @@ mill inspect foo.{compile,run}
 mill inspect "foo.{compile,run}"
 mill inspect foo.compile foo.run
 mill inspect _.compile
-mill inspect __.compile
+mill inspect __.compile # double-underscore
 mill inspect _
 mill inspect foo._
-mill inspect __
+mill inspect __ # double-underscore
 ```
 
 ### show
@@ -516,8 +515,7 @@ By default, Mill does not print out the metadata from evaluating a task. Most pe
 viewing the metadata related to incremental compilation: they just want to compile their code! However, if you want to
 inspect the build to debug problems, you can make Mill show you the metadata output for a task using the `show` command:
 
-All tasks return values that can be `show`n, not just configuration values. e.g.
-`compile` returns that path to the `classes` and `analysisFile` that are produced by the compilation:
+`show` is not just for showing configuration values. All tasks return values that can be shown with `show`. e.g. `compile` returns the paths to the `classes` folder and `analysisFile` file produced by the compilation:
 
 ```bash
 $ mill show foo.compile
@@ -549,7 +547,7 @@ $ mill show foo.compileClasspath
 ```
 
 `show` is also useful for interacting with Mill from external tools, since the JSON it outputs is structured and easily
-parsed & manipulated.
+parsed and manipulated.
 
 ### path
 
@@ -565,7 +563,7 @@ foo.assembly
 ```
 
 `mill path` prints out a dependency chain between the first task and the second. It is very useful for exploring the
-build graph and trying to figure out how data gets from one task to another. If there are multiple possible dependency
+build graph and trying to figure out how data gets from one task to another. Note that if there are multiple possible dependency
 chains, one of them is picked arbitrarily.
 
 ### plan
@@ -586,7 +584,7 @@ foo.transitiveIvyDeps
 foo.compileClasspath
 ```
 
-`mill plan foo` prints out what tasks would be evaluated, in what order, if you ran `mill foo`, but without actually
+`mill plan foo` shows which tasks would be evaluated, and in what order, if you ran `mill foo`, but without actually
 running them. This is a useful tool for debugging your build: e.g. if you suspect a task `foo` is running things that it
 shouldn't be running, a quick `mill plan` will list out all the upstream tasks that `foo` needs to run, and you can then
 follow up with `mill path` on any individual upstream task to see exactly how `foo` depends on it.
@@ -677,7 +675,7 @@ mill clean foo.{compile,run}
 mill clean "foo.{compile,run}"
 mill clean foo.compile foo.run
 mill clean _.compile
-mill clean __.compile
+mill clean __.compile # double-underscore
 ```
 
 ### Search for dependency updates
@@ -692,8 +690,8 @@ dependencies with particularly weird version numbers.
 
 Current limitations:
 
-- Only works for `JavaModule`s (including `ScalaModule`s,
-  `CrossScalaModule`s, etc.) and Maven repositories.
+- Only works for `JavaModule` modules (including `ScalaModule`,
+  `CrossScalaModule`, etc.) and Maven repositories.
 - Always applies to all modules in the build.
 - Doesn't apply to `$ivy` dependencies used in the build definition itself.
 
@@ -707,14 +705,14 @@ mill mill.scalalib.Dependency/showUpdates --allowPreRelease true # also show pre
 Mill supports any IDE that is compatible with [BSP](https://build-server-protocol.github.io/), such as IntelliJ.  
 Use `mill mill.bsp.BSP/install` to generate the BSP project config for your build.
 
-It also enables Intellij to provide navigation & code-completion features within your build file itself.
+It also enables Intellij to provide navigation and code-completion features within your build file itself.
 
 ## IntelliJ Support (legacy)
 
 Mill supports IntelliJ configuration generation. Use `mill mill.scalalib.GenIdea/idea` to generate an IntelliJ project
 config for your build.
 
-This also configures IntelliJ to allow easy navigate & code-completion within your build file itself.
+This also configures IntelliJ to allow easy navigation and code-completion within your build file itself.
 
 ## The Build REPL
 
@@ -757,7 +755,7 @@ res2: mill.scalalib.api.CompilationResult = CompilationResult(
 ```
 
 You can run `mill --repl` to open a build REPL; this is a Scala console with your `build.sc` loaded, which lets you run
-tasks interactively. The task-running syntax is slightly different from the command-line, but more in-line with how you
+tasks interactively. The task-running syntax is slightly different from the command-line, but more in line with how you
 would depend on tasks from within your build file.
 
 You can use this REPL to interactively explore your build to see what is available.
@@ -767,7 +765,7 @@ You can use this REPL to interactively explore your build to see what is availab
 The two most common things to do once your code is complete is to make an assembly (e.g. for deployment/installation) or
 publishing (e.g. to Maven Central). Mill comes with both capabilities built in.
 
-Mill comes built-in with the ability to make assemblies. Given a simple Mill build:
+Mill comes with the built-in ability to make assemblies. Given a simple Mill build:
 
 ```scala
 // build.sc
@@ -857,7 +855,7 @@ If you are publishing multiple artifacts, you can also use `mill mill.scalalib.P
 
 ## Structure of the `out/` folder
 
-The `out/` folder contains all the generated files & metadata for your build. It is structured with one folder
+The `out/` folder contains all the generated files and metadata for your build. It is structured with one folder
 per `Target`/`Command`, that is run, e.g.:
 
 - `out/core/compile/`
@@ -872,21 +870,21 @@ executed. This is very useful if you want to find out exactly what tasks are bei
 Each folder currently contains the following files:
 
 - `dest/`: a path for the `Task` to use either as a scratch space, or to place generated files that are returned
-  using `PathRef`s. `Task`s should only output files within their given `dest/` folder (available as `T.dest`) to avoid
-  conflicting with other `Task`s, but files within `dest/` can be named arbitrarily.
+  using `PathRef` references. A `Task` should only output files within its own given `dest/` folder (available as `T.dest`), to avoid
+  conflicting with another `Task`, but can name files within `dest/` arbitrarily.
 
 - `log`: the `stdout`/`stderr` of the `Task`. This is also streamed to the console during evaluation.
 
 - `meta.json`: the cache-key and JSON-serialized return-value of the
   `Target`/`Command`. The return-value can also be retrieved via `mill show foo.compile`. Binary blobs are typically not
   included in `meta.json`, and instead stored as separate binary files in `dest/` which are then referenced
-  by `meta.json` via `PathRef`s
+  by `meta.json` via `PathRef` references.
 
-The `out/` folder is intentionally kept simplistic and user-readable. If your build is not behaving as you would expect,
+The `out/` folder is intentionally kept simple and user-readable. If your build is not behaving as you would expect,
 feel free to poke around the various
 `dest/` folders to see what files are being created, or the `meta.json` files to see what is being returned by a
 particular task. You can also simply delete folders within `out/` if you want to force portions of your project to be
-re-built, e.g. deleting the `out/main/` or `out/main/test/compile/` folders.
+re-built, e.g. by deleting the `out/main/` or `out/main/test/compile/` folders.
 
 ## Overriding Mill Versions
 
@@ -905,13 +903,13 @@ echo "0.5.0" > .mill-version
 - Pass in a `MILL_VERSION` environment variable, e.g.
 
 ```bash
-MILL_VERSION=0.5.0-3-4faefb mill __.compile
+MILL_VERSION=0.5.0-3-4faefb mill __.compile # double-underscore
 ```
 
 or
 
 ```bash
-MILL_VERSION=0.5.0-3-4faefb ./mill __.compile
+MILL_VERSION=0.5.0-3-4faefb ./mill __.compile # double-underscore
 ```
 
 to override the Mill version manually. This takes precedence over the version specified in `./mill` or `.mill-version`
@@ -923,7 +921,7 @@ Note that both of these overrides only work for versions 0.5.0 and above.
 In case you want to try out the latest features and improvements that are currently in master, unstable versions of Mill
 are
 [available](https://github.com/com-lihaoyi/mill/releases) as binaries named
-`#.#.#-n-hash` linked to the latest tag. Installing the latest unstable release is recommended for bootstrapping mill.
+`#.#.#-n-hash` linked to the latest tag. Installing the latest unstable release is recommended for bootstrapping Mill.
 
 The easiest way to use a development release is by updating the [Bootstrap Script](#bootstrap-scripts-linuxos-x-only),
 or
