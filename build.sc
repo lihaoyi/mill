@@ -96,6 +96,7 @@ object Deps {
   val scalametaTrees = ivy"org.scalameta::trees:4.4.17"
   def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:${scalaVersion}"
   def scalacScoveragePlugin = ivy"org.scoverage::scalac-scoverage-plugin:1.4.1"
+  def scalatest = ivy"org.scalatest::scalatest:3.2.3"
   val sourcecode = ivy"com.lihaoyi::sourcecode:0.2.7"
   val upickle = ivy"com.lihaoyi::upickle:1.3.12"
   val utest = ivy"com.lihaoyi::utest:0.7.10"
@@ -172,11 +173,9 @@ object main extends MillModule {
   def ivyDeps = Agg(
     Deps.windowsAnsi
   )
-
   def compileIvyDeps = Agg(
     Deps.scalaReflect(scalaVersion())
   )
-
   def generatedSources = T {
     Seq(PathRef(shared.generateCoreSources(T.ctx.dest)))
   }
@@ -659,6 +658,25 @@ object bsp extends MillModule {
     Deps.bsp,
     Deps.sbtTestInterface
   )
+  object newbsp extends MillModule {
+    override def moduleDeps = Seq(
+      main,
+      main.core,
+      scalalib,
+      bsp
+    )
+    override def ivyDeps = Agg(
+      Deps.bsp,
+      Deps.sbtTestInterface
+    )
+    override val test = new Tests(implicitly)
+    class Tests(ctx0: mill.define.Ctx) extends super.Tests(ctx0) {
+      override def ivyDeps = Agg(Deps.scalatest)
+      override def testFrameworks = Seq("org.scalatest.tools.Framework")
+      override def scalacPluginClasspath =
+        super.scalacPluginClasspath() ++ Seq(main.moduledefs.jar())
+    }
+  }
 }
 
 def testRepos = T{
@@ -790,7 +808,7 @@ def launcherScript(shellJvmArgs: Seq[String],
 }
 
 object dev extends MillModule {
-  def moduleDeps = Seq(scalalib, scalajslib, scalanativelib, bsp)
+  def moduleDeps = Seq(scalalib, scalajslib, scalanativelib, bsp, bsp.newbsp)
 
 
   def forkArgs =

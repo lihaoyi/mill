@@ -3,8 +3,6 @@ package mill.util
 import java.io._
 import java.nio.file.{Files, StandardOpenOption}
 
-import scala.util.DynamicVariable
-
 import mill.api.Logger
 
 object DummyLogger extends Logger {
@@ -63,14 +61,17 @@ object PrintState {
   case object Newline extends PrintState
   case object Middle extends PrintState
 }
-trait ColorLogger extends Logger{
+trait ColorLogger extends Logger {
   def colors: ammonite.util.Colors
 }
 
-case class PrefixLogger(out: ColorLogger, context: String, tickerContext: String = "") extends ColorLogger {
+case class PrefixLogger(out: Logger, context: String, tickerContext: String = "") extends ColorLogger {
   override def colored = out.colored
 
-  def colors = out.colors
+  def colors = out match {
+    case cl: ColorLogger => cl.colors
+    case _ =>  ammonite.util.Colors.Default
+  }
   override val errorStream = new PrintStream(new LinePrefixOutputStream(
     colors.info()(context).render, out.errorStream
   ))

@@ -14,13 +14,114 @@ import mill.api.{Logger, PathRef, Result}
 import mill.api.Strict.Agg
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 /**
-  * Custom version of ammonite.main.Scripts, letting us run the build.sc script
-  * directly without going through Ammonite's main-method/argument-parsing
-  * subsystem
-  */
-object RunScript{
+ * Custom version of ammonite.main.Scripts, letting us run the build.sc script
+ * directly without going through Ammonite's main-method/argument-parsing
+ * subsystem
+ */
+object RunScript {
+
+  def initEvaluator(
+      home: os.Path,
+      wd: os.Path,
+      path: os.Path,
+      instantiateInterpreter: => Either[
+        (Res.Failing, Seq[(ammonite.interp.Watchable, Long)]),
+        ammonite.interp.Interpreter
+      ],
+      stateCache: Option[Evaluator.State],
+      log: Logger,
+      env: Map[String, String],
+      keepGoing: Boolean,
+      systemProperties: Map[String, String],
+      threadCount: Option[Int]
+  ): Try[Evaluator] = {
+
+    systemProperties.foreach { case (k, v) =>
+      System.setProperty(k, v)
+    }
+
+    val (evalState, interpWatched) = stateCache match {
+      case Some(s) if watchedSigUnchanged(s.watched) =>
+        Res.Success(s) -> s.watched
+      case _ =>
+        instantiateInterpreter match {
+          case Left((res, watched)) => (res, watched)
+          case Right(interp) =>
+            interp.watch(path)
+            val eval =
+              for (rootModule <- evaluateRootModule(wd, path, interp, log))
+                yield Evaluator.State(
+                  rootModule,
+                  rootModule.getClass.getClassLoader
+                    .asInstanceOf[SpecialClassLoader]
+                    .classpathSignature,
+                  mutable.Map.empty[Segments, (Int, Any)],
+                  interp.watchedValues.toSeq
+                )
+            (eval, interp.watchedValues)
+        }
+    }
+
+    val evalRes: Res[Evaluator] =
+      for (s: Evaluator.State <- evalState)
+        yield new Evaluator(
+          home,
+          wd / 'out,
+          wd / 'out,
+          s.rootModule,
+          log,
+          s.classLoaderSig,
+          s.workerCache,
+          env,
+          failFast = !keepGoing,
+          threadCount = threadCount
+        )
+
+    evalRes match {
+      case Res.Success(x)      => Success(x)
+      case Res.Exception(e, _) => Failure(e)
+      case Res.Failure(e) =>
+        Failure(new RuntimeException(s"Could not create evaluator: $e"))
+      case _ => Failure(new RuntimeException("Could not create evaluator"))
+    }
+  }
+
+  def withEvaluator[T](
+      home: os.Path,
+      wd: os.Path,
+      path: os.Path,
+      instantiateInterpreter: => Either[
+        (Res.Failing, Seq[(ammonite.interp.Watchable, Long)]),
+        ammonite.interp.Interpreter
+      ],
+      stateCache: Option[Evaluator.State],
+      log: Logger,
+      env: Map[String, String],
+      keepGoing: Boolean,
+      systemProperties: Map[String, String],
+      threadCount: Option[Int]
+  )(f: Evaluator => T): T = {
+    val evaluator = initEvaluator(
+      home,
+      wd,
+      path,
+      instantiateInterpreter,
+      stateCache,
+      log,
+      env,
+      keepGoing,
+      systemProperties,
+      threadCount
+    )
+    evaluator match {
+      case Success(x) => f(x)
+      case Failure(e) => throw e
+    }
+  }
+
   def runScript(home: os.Path,
                 wd: os.Path,
                 path: os.Path,
