@@ -10,6 +10,8 @@ import mainargs.{Flag, Leftover, arg}
 import mill.eval.Evaluator
 import mill.api.DummyInputStream
 
+import modules.InitProject
+
 case class MillConfig(
   ammoniteCore: ammonite.main.Config.Core,
   @arg(doc = """Run Mill in interactive mode and start a build REPL. In this mode, no
@@ -109,7 +111,10 @@ object MillMain {
     if (args.take(1).toSeq == Seq("--help")){
       stdout.println(parser.helpText(customName = customName, customDoc = customDoc))
       (true, None)
-    }else parser.constructEither(
+    } else if (args.length == 0) {
+      stdout.println(parser.helpText(customName = customName, customDoc = customDoc))
+      (false, None)
+    } else parser.constructEither(
       args,
       allowRepeats = true, autoPrintHelpAndExit = None,
       customName = customName, customDoc = customDoc
@@ -146,7 +151,10 @@ object MillMain {
             } else if ( useRepl && stdin == DummyInputStream ) {
               stderr.println("Build REPL needs to be run with the -i/--interactive/--repl flag")
               (false, stateCache)
-            }else{
+            } else if ( config.leftoverArgs.value.exists(_ == "init")) {
+              InitProject.initialize(config.leftoverArgs.value.toList, stdin, stdout, stderr)
+              (true, None)
+            } else{
               if ( useRepl && config.interactive.value ) {
                 stderr.println("WARNING: Starting a build REPL without --repl is deprecated")
               }
