@@ -56,11 +56,26 @@ trait ScoverageModule extends ScalaModule { outer: ScalaModule =>
     */
   def scoverageVersion: T[String]
 
-  def scoverageRuntimeDep = T {
-    ivy"org.scoverage::scalac-scoverage-runtime:${outer.scoverageVersion()}"
+  /** decide if the ivy dependency is full-Scala-specific for the given scoverage version. */
+  def needsFullScalaVersion(scoverageVersion: String): Boolean = {
+    scoverageVersion.split("[.]", 3) match {
+      // versions before 1.4.3 are not full-Scala-version specific
+      case Array("0", _, _) | Array("1", "0" | "1" | "3", _) | Array("1", "4", "0" | "1" | "2") => false
+      case _ => true
+    }
   }
-  def scoveragePluginDep = T {
-    ivy"org.scoverage::scalac-scoverage-plugin:${outer.scoverageVersion()}"
+
+  def scoverageRuntimeDep: T[Dep] = T {
+    if(needsFullScalaVersion(scoverageVersion()))
+      ivy"org.scoverage:::scalac-scoverage-runtime:${scoverageVersion()}"
+    else
+      ivy"org.scoverage::scalac-scoverage-runtime:${scoverageVersion()}"
+  }
+  def scoveragePluginDep: T[Dep] = T {
+    if(needsFullScalaVersion(scoverageVersion()))
+      ivy"org.scoverage:::scalac-scoverage-plugin:${scoverageVersion()}"
+    else
+      ivy"org.scoverage::scalac-scoverage-plugin:${scoverageVersion()}"
   }
 
   def toolsClasspath = T {
@@ -68,12 +83,7 @@ trait ScoverageModule extends ScalaModule { outer: ScalaModule =>
   }
 
   def scoverageClasspath = T {
-    Lib.resolveDependencies(
-      Seq(coursier.LocalRepositories.ivy2Local, MavenRepository("https://repo1.maven.org/maven2")),
-      Lib.depToDependency(_, "2.13.1"),
-      Seq(scoveragePluginDep()),
-      ctx = Some(implicitly[mill.util.Ctx.Log])
-    )
+    resolveDeps(T.task { Agg(scoveragePluginDep()) })()
   }
 
   def scoverageReportWorkerClasspath = T {

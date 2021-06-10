@@ -1,8 +1,7 @@
 package mill.contrib.scoverage
 
 import mill._
-import mill.api.Result
-import mill.contrib.BuildInfo
+import mill.contrib.buildinfo.BuildInfo
 import mill.scalalib._
 import mill.util.{TestEvaluator, TestUtil}
 import utest._
@@ -13,7 +12,7 @@ object HelloWorldTests extends utest.TestSuite {
   val sbtResourcePath = os.pwd / "contrib" / "scoverage" / "test" / "resources" / "hello-world-sbt"
   val unmanagedFile = resourcePath / "unmanaged.xml"
   trait HelloBase extends TestUtil.BaseModule {
-    def millSourcePath =  TestUtil.getSrcPathBase() / millOuterCtx.enclosing.split('.')
+    override def millSourcePath =  TestUtil.getSrcPathBase() / millOuterCtx.enclosing.split('.')
   }
 
   object HelloWorld extends HelloBase {
@@ -22,19 +21,16 @@ object HelloWorldTests extends utest.TestSuite {
     }
 
     object core extends ScoverageModule with BuildInfo {
-      def scalaVersion = "2.12.9"
-      def scoverageVersion = "1.4.0"
-      def unmanagedClasspath = Agg(PathRef(unmanagedFile))
-
-      def moduleDeps = Seq(other)
-
-      def buildInfoMembers = T {
+      def scalaVersion = "2.12.13"
+      def scoverageVersion = "1.4.4"
+      override def unmanagedClasspath = Agg(PathRef(unmanagedFile))
+      override def moduleDeps = Seq(other)
+      override def buildInfoMembers = T {
         Map("scoverageVersion" -> scoverageVersion())
       }
 
-      object test extends ScoverageTests {
+      object test extends ScoverageTests with TestModule.ScalaTest {
         override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.0.8")
-        def testFrameworks = Seq("org.scalatest.tools.Framework")
       }
     }
   }
@@ -49,9 +45,8 @@ object HelloWorldTests extends utest.TestSuite {
       )
       override def resources = T.sources{ millSourcePath / "src" / "main" / "resources" }
 
-      object test extends ScoverageTests {
+      object test extends ScoverageTests with TestModule.ScalaTest {
         override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.0.8")
-        def testFrameworks = Seq("org.scalatest.tools.Framework")
         override def millSourcePath = outer.millSourcePath
         override def intellijModulePath = outer.millSourcePath / "src" / "test"
       }
@@ -76,7 +71,7 @@ object HelloWorldTests extends utest.TestSuite {
           val Right((result, evalCount)) = eval.apply(HelloWorld.core.scoverageVersion)
 
           assert(
-            result == "1.4.0",
+            result == "1.4.4",
             evalCount > 0
           )
         }
@@ -94,7 +89,7 @@ object HelloWorldTests extends utest.TestSuite {
               eval.apply(HelloWorld.core.scoverage.ivyDeps)
 
             assert(
-              result == Agg(ivy"org.scoverage::scalac-scoverage-runtime:1.4.0"),
+              result == Agg(ivy"org.scoverage:::scalac-scoverage-runtime:1.4.4"),
               evalCount > 0
             )
           }
@@ -103,7 +98,7 @@ object HelloWorldTests extends utest.TestSuite {
               eval.apply(HelloWorld.core.scoverage.scalacPluginIvyDeps)
 
             assert(
-              result == Agg(ivy"org.scoverage::scalac-scoverage-plugin:1.4.0"),
+              result == Agg(ivy"org.scoverage:::scalac-scoverage-plugin:1.4.4"),
               evalCount > 0
             )
           }
@@ -149,14 +144,16 @@ object HelloWorldTests extends utest.TestSuite {
             )
           }
           // TODO: document why we disable for Java9+
-          "runClasspath" - TestUtil.disableInJava9OrAbove(workspaceTest(HelloWorld) { eval =>
-            val Right((result, evalCount)) = eval.apply(HelloWorld.core.scoverage.runClasspath)
+          "runClasspath" - TestUtil.disableInJava9OrAbove {
+            workspaceTest(HelloWorld) { eval =>
+              val Right((result, evalCount)) = eval.apply(HelloWorld.core.scoverage.runClasspath)
 
-            assert(
-              result.map(_.toString).exists(_.contains("scalac-scoverage-runtime")),
-              evalCount > 0
-            )
-          })
+              assert(
+                result.map(_.toString).exists(_.contains("scalac-scoverage-runtime")),
+                evalCount > 0
+              )
+            }
+          }
         }
       }
     }
