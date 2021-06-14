@@ -188,7 +188,7 @@ class MillBuildServer(evaluator: Evaluator, bspVersion: String, serverVersion: S
         compileTasks,
         getBspLoggedReporterPool(params, modules, evaluator, client),
         DummyTestReporter,
-        new MillBspLogger(client, taskId, evaluator.baseLogger)
+        MillBspLogger.createBspLogger(client, taskId, evaluator.baseLogger.inStream)
       )
       val compileResult = new CompileResult(getStatusCode(result))
       compileResult.setOriginId(compileParams.getOriginId)
@@ -206,7 +206,7 @@ class MillBuildServer(evaluator: Evaluator, bspVersion: String, serverVersion: S
       val runResult = evaluator.evaluate(
         Strict.Agg(runTask),
         getBspLoggedReporterPool(params, modules, evaluator, client),
-        logger = new MillBspLogger(client, runTask.hashCode(), evaluator.baseLogger)
+        logger = MillBspLogger.createBspLogger(client, runTask.hashCode(), evaluator.baseLogger.inStream)
       )
       val response = runResult.results(runTask) match {
         case _: Result.Success[Any] => new RunResult(StatusCode.OK)
@@ -263,7 +263,7 @@ class MillBuildServer(evaluator: Evaluator, bspVersion: String, serverVersion: S
                 Strict.Agg(testTask),
                 getBspLoggedReporterPool(params, modules, evaluator, client),
                 testReporter,
-                new MillBspLogger(client, testTask.hashCode, evaluator.baseLogger)
+                MillBspLogger.createBspLogger(client, testTask.hashCode, evaluator.baseLogger.inStream)
               )
               val statusCode = getStatusCode(results)
 
@@ -311,7 +311,7 @@ class MillBuildServer(evaluator: Evaluator, bspVersion: String, serverVersion: S
           val cleanTask = mainModule.clean(evaluator, Seq(s"${module.millModuleSegments.render}.compile"): _*)
           val cleanResult = evaluator.evaluate(
             Strict.Agg(cleanTask),
-            logger = new MillBspLogger(client, cleanTask.hashCode, evaluator.baseLogger)
+            logger = MillBspLogger.createBspLogger(client, cleanTask.hashCode, evaluator.baseLogger.inStream)
           )
           if (cleanResult.failing.keyCount > 0) (
             msg + s" Target ${module.millModuleSegments.render} could not be cleaned. See message from mill: \n" +

@@ -2,14 +2,17 @@ package mill.bsp
 
 import ch.epfl.scala.bsp4j.BuildClient
 import java.io.PrintWriter
-import java.nio.file.FileAlreadyExistsException
+import java.nio.charset.Charset
+import java.nio.file.{ FileAlreadyExistsException, Files, StandardOpenOption }
 import java.util.concurrent.Executors
-import mill.{BuildInfo, T}
-import mill.define.{Command, Discover, ExternalModule}
+import mill.define.{ Command, Discover, ExternalModule }
 import mill.eval.Evaluator
 import mill.modules.Util
+import mill.util.MultiStream
+import mill.{ BuildInfo, T }
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import scala.concurrent.CancellationException
+import scala.util.Using
 import upickle.default.write
 
 object BSP extends ExternalModule {
@@ -100,38 +103,45 @@ object BSP extends ExternalModule {
         BuildInfo.millVersion)
       val executor = Executors.newCachedThreadPool()
 
-      val logger = T.ctx.log
-      val in = logger.inStream
-      val out = logger.outputStream
-      try {
-        val launcher = new Launcher.Builder[BuildClient]()
-          .setOutput(out)
-          .setInput(in)
-          .setLocalService(millServer)
-          .setRemoteInterface(classOf[BuildClient])
-          .traceMessages(new PrintWriter(
-            (evaluator.rootModule.millSourcePath / ".bsp" / "mill.log").toIO))
-          .setExecutorService(executor)
-          .create()
-        millServer.onConnectWithClient(launcher.getRemoteProxy)
-        val listening = launcher.startListening()
-        millServer.cancelator = () => listening.cancel(true)
-        listening.get()
-        ()
-      } catch {
-        case _: CancellationException =>
-          T.log.error("The mill server was shut down.")
-        case e: Exception =>
-          T.log.error(
-            s"""An exception occured while connecting to the client.
-               |Cause: ${e.getCause}
-               |Message: ${e.getMessage}
-               |Exception class: ${e.getClass}
-               |Stack Trace: ${e.getStackTrace}""".stripMargin
-          )
-      } finally {
-        T.log.error("Shutting down executor")
-        executor.shutdown()
+      val logger = ev.baseLogger // The output needs to be output in raw form without "extra text" added by Mill.
+      val serverIn = logger.inStream
+      val bspServerRawTracePath = T.dest / "mill-bsp-server-raw-json.log"
+      Using.resource(Files.newOutputStream(bspServerRawTracePath.toNIO,
+        StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) { bspServerRawTraceStream =>
+        val serverOut = new MultiStream(logger.outputStream, bspServerRawTraceStream)
+        val bspServerTracePath = T.dest / "mill-bsp-server-io.log"
+        Using.resource(new PrintWriter(
+          bspServerTracePath.toIO, Charset.defaultCharset().name())) { bspServerTraceWriter =>
+          try {
+            val launcher = new Launcher.Builder[BuildClient]()
+              .setOutput(serverOut)
+              .setInput(serverIn)
+              .setLocalService(millServer)
+              .setRemoteInterface(classOf[BuildClient])
+              .traceMessages(bspServerTraceWriter)
+              .setExecutorService(executor)
+              .create()
+            millServer.onConnectWithClient(launcher.getRemoteProxy)
+            val listening = launcher.startListening()
+            millServer.cancelator = () => listening.cancel(true)
+            listening.get()
+            ()
+          } catch {
+            case _: CancellationException =>
+              T.log.error("The mill server was shut down.")
+            case e: Exception =>
+              T.log.error(
+                s"""An exception occurred while connecting to the client.
+                   |Cause: ${e.getCause}
+                   |Message: ${e.getMessage}
+                   |Exception class: ${e.getClass}
+                   |Stack Trace: ${e.getStackTrace}""".stripMargin
+              )
+          } finally {
+            T.log.error("Shutting down executor")
+            executor.shutdown()
+          }
+        }
       }
     }
 }
