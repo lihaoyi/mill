@@ -8,7 +8,9 @@ DEFAULT_MILL_VERSION=0.9.3
 set -e
 
 if [ -z "$MILL_VERSION" ] ; then
-  if [ -f ".mill-version" ] ; then
+  if [ -f ".config/.mill-version" ] ; then
+    MILL_VERSION="$(head -n 1 .config/.mill-version 2> /dev/null)"
+  elif [ -f ".mill-version" ] ; then
     MILL_VERSION="$(head -n 1 .mill-version 2> /dev/null)"
   elif [ -f "mill" ] && [ "$BASH_SOURCE" != "mill" ] ; then
     MILL_VERSION=$(grep -F "DEFAULT_MILL_VERSION=" "mill" | head -n 1 | cut -d= -f2)
