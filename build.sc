@@ -101,7 +101,7 @@ object Deps {
   val utest = ivy"com.lihaoyi::utest:0.7.10"
   val windowsAnsi = ivy"io.github.alexarchambault.windows-ansi:windows-ansi:0.0.3"
   val zinc = ivy"org.scala-sbt::zinc:1.5.7"
-  val bsp = ivy"ch.epfl.scala:bsp4j:2.0.0-M13"
+  val bsp = ivy"ch.epfl.scala:bsp4j:2.0.0-M14"
   val jarjarabrams = ivy"com.eed3si9n.jarjarabrams::jarjar-abrams-core:0.3.1"
 }
 
