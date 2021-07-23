@@ -117,7 +117,7 @@ jobs:
 
       - uses: actions/setup-java@v1
         with:
-          java-version: 9
+          java-version: 8
 
       - run: ci/release-maven.sh
 
@@ -137,6 +137,6 @@ jobs:
 
       - uses: actions/setup-java@v1
         with:
-          java-version: 9
+          java-version: 8
 
       - run: ./mill -i uploadToGithub $REPO_ACCESS_TOKEN
